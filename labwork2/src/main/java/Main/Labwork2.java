@@ -1,4 +1,6 @@
-package com.mycompany.labwork2;
+package Main;
+
+
 
 /**
  *
@@ -7,6 +9,7 @@ package com.mycompany.labwork2;
 public class Labwork2 {
 
     public static void main(String[] args) {
-        
+        GUI gui = new GUI();
+        gui.setVisible(true);
     }
 }
