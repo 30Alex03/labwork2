@@ -3,67 +3,40 @@ package Main;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import org.apache.commons.math3.linear.RealMatrix;
+import java.util.Map;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-/**
- *
- * @author ivahn
- */
-public class XlsxWriter {
-    private final String[] HEADER = new String[]{"Выборка", "Среднее арифметическое", "Среднее геометрическое", "Стандартное отклонение", "Размах", "Количество элементов", "Коэффициент вариации", "Дисперсия", "Максимум", "Минимум", "LCI", "UCI"};
 
-    public void write(ArrayList<ArrayList<Double>> data, ArrayList<String> names, RealMatrix covData) throws FileNotFoundException, IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Statistics");
-        
-        Row header = sheet.createRow(0);
-        int i = 0;
-        for (String name : HEADER) {
-            header.createCell(i).setCellValue(name);
-            i++;
+public class XlsxWriter {
+
+    public void write(Map<String, double[]> processedData, double[][] covMatrix, String fileName) throws FileNotFoundException, IOException {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Вычисления");
+        Row row = sheet.createRow(0);
+        int numberOfNames = processedData.keySet().size();
+        String[] names = processedData.keySet().toArray(new String[numberOfNames]);
+        int numberOfParameters = processedData.get(names[0]).length;
+        for (int i = 0; i < numberOfNames; i++) {
+            row.createCell(i).setCellValue(names[i]);
         }
-        
-        i = 1;
-        for (ArrayList<Double> sample : data) {
-            Row row = sheet.createRow(i);
-            row.createCell(0).setCellValue(names.get(i-1));
-            int j = 1;
-            for (Double value : sample) {
-                Cell cell = row.createCell(j);
-                cell.setCellValue(value);
-                j++;
-            }
-            i++;
-        }
-        
-        i++;
-        sheet.createRow(i).createCell(0).setCellValue("Ковариационная матрица");
-        
-        i++;
-        Row row = sheet.createRow(i);
-        int j = 1;
-        for (String name : names) {
-            row.createCell(j).setCellValue(name);
-            j++;
-        }
-        
-        i++;
-        for (int k = 0; k < covData.getColumnDimension(); k++) {
-            row = sheet.createRow(i+k);
-            row.createCell(0).setCellValue(names.get(k));
-            double[] col = covData.getColumn(k);
-            for (int l = 0; l < covData.getRowDimension(); l++) {
-                row.createCell(l+1).setCellValue(col[l]);
+        for (int j = 0; j < numberOfParameters; j++) {
+            row = sheet.createRow(j + 1);
+            for (int i = 0; i < numberOfNames; i++) {
+                Cell cell = row.createCell(i);
+                cell.setCellValue(processedData.get(names[i])[j]);
             }
         }
-        
-        FileOutputStream fos = new FileOutputStream("result.xlsx");
-        workbook.write(fos);
+        XSSFSheet sheetForMatrix = workbook.createSheet("Матрица");
+        for (int i = 0; i < covMatrix.length; i++) {
+            Row roww = sheetForMatrix.createRow(i);
+            for (int j = 0; j < covMatrix[i].length; j++) {
+                Cell cell = roww.createCell(j);
+                cell.setCellValue(covMatrix[i][j]);
+            }
+        }
+        workbook.write(new FileOutputStream(fileName));
         workbook.close();
     }
 }

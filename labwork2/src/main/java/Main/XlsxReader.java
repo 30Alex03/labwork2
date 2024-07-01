@@ -1,90 +1,55 @@
 package Main;
 
-import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.poi.ooxml.POIXMLException;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-/**
- *
- * @author ivahn
- */
+
 public class XlsxReader {
-    private Sheet sheet;
 
-    public ArrayList<DescriptiveStatistics> read() {
-        ArrayList<DescriptiveStatistics> data = new ArrayList<>();
-        try {
-            for (Row row : sheet) {
-                int i = 0;
-                for (Cell cell : row) {
-                    switch (cell.getCellType()) {
-                        case STRING ->
-                            data.add(new DescriptiveStatistics());
-                        case NUMERIC ->
-                            data.get(i).addValue(cell.getNumericCellValue());
-                        default -> {
-                        }
-                    }
-                    i++;
-                }
-            }
-        } catch (NullPointerException | IllegalArgumentException e) {
-            System.out.println("Листа не существует");
-        }
-
-        return data;
-    }
-
-    public ArrayList<String> readNames() {
-        ArrayList<String> names = new ArrayList<>();
-        try {
-        Row row = sheet.getRow(0);
-        for (Cell cell : row) {
-            names.add(cell.getStringCellValue());
-        }
-        } catch (NullPointerException | IllegalArgumentException e) {
-            
-        }
-        return names;
-    }
-
-    public void openFile(File file, String sheetName, int sheetNumber) {
-        FileInputStream fis = null;
-        Workbook workbook = null;
-        try {
-            fis = new FileInputStream(file);
-            workbook = new XSSFWorkbook(file);
-            if (sheetName == null) {
-                sheet = workbook.getSheetAt(sheetNumber);
+    public Map<String, double[]> read(String fileName, String sheetNameorIndex, boolean isIndex) throws FileNotFoundException, IOException {
+        Map<String, double[]> excelData = new HashMap<>();
+        Map<String, List<Double>> data = new HashMap<>();
+        XSSFWorkbook myBook = new XSSFWorkbook(new FileInputStream(fileName));
+        XSSFSheet sheet;
+        if (isIndex == true) {
+            int index = Integer.parseInt(sheetNameorIndex.trim()) - 1; 
+            int numberOfSheets = myBook.getNumberOfSheets();
+            if (index  <= numberOfSheets && index >= 0) {
+                sheet = myBook.getSheetAt(index);
             } else {
-                sheet = workbook.getSheet(sheetName);
+                throw new IllegalArgumentException();
             }
-        } catch (NotOfficeXmlFileException | POIXMLException e) {
-            System.out.println("Выбран не Excel файл");
-        } catch (IOException ex) {
-            System.out.println("Ошибка ввода/вывода");
-        } catch (NullPointerException | IllegalArgumentException e) {
-            System.out.println("Листа не существует");
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                fis.close();
-                workbook.close();
-            } catch (Exception e) {
-
+        } else {
+            sheet = myBook.getSheet(sheetNameorIndex.trim());
+        }
+        Row headerRow = sheet.getRow(0);
+        for (Cell cell : headerRow) {
+            data.put(cell.getStringCellValue(), new ArrayList<>());
+        }
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            int columnindex = 0;
+            for (String key : data.keySet()) {
+                Cell cell = row.getCell(columnindex);
+                data.get(key).add(cell.getNumericCellValue());
+                columnindex++;
             }
         }
+        for (Map.Entry<String, List<Double>> entry : data.entrySet()) {
+            double[] values = new double[entry.getValue().size()];
+            for (int i = 0; i < entry.getValue().size(); i++) {
+                values[i] = entry.getValue().get(i);
+            }
+            excelData.put(entry.getKey(), values);
+        }
+        return excelData;
     }
 }
