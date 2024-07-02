@@ -53,7 +53,7 @@
                             <archive>
                                 <manifest>
                                     <mainClass>
-                                     shirkin.laba2.Laba2   
+                                        Main.Labwork2
                                     </mainClass>
                                 </manifest>
                             </archive>
